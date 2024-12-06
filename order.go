@@ -10,17 +10,17 @@ import (
 )
 
 // NewOrder initiates a new order for a new certificate. This method does not use ACME Renewal Info.
-func (c Client) NewOrder(account Account, identifiers []Identifier) (Order, error) {
-	return c.ReplacementOrder(account, nil, identifiers)
+func (c Client) NewOrder(account Account, identifiers []Identifier, profile string) (Order, error) {
+	return c.ReplacementOrder(account, nil, identifiers, profile)
 }
 
 // NewOrderDomains takes a list of domain dns identifiers for a new certificate. Essentially a helper function.
-func (c Client) NewOrderDomains(account Account, domains ...string) (Order, error) {
+func (c Client) NewOrderDomains(account Account, profile string, domains ...string) (Order, error) {
 	var identifiers []Identifier
 	for _, d := range domains {
 		identifiers = append(identifiers, Identifier{Type: "dns", Value: d})
 	}
-	return c.ReplacementOrder(account, nil, identifiers)
+	return c.ReplacementOrder(account, nil, identifiers, profile)
 }
 
 // ReplacementOrder takes an existing *x509.Certificate and initiates a new
@@ -31,7 +31,7 @@ func (c Client) NewOrderDomains(account Account, domains ...string) (Order, erro
 // must match the list of identifiers from the parent order to be considered as
 // a valid replacement order.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-acme-ari-03#section-5
-func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, identifiers []Identifier) (Order, error) {
+func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, identifiers []Identifier, profile string) (Order, error) {
 	// If an old cert being replaced is present and the acme directory doesn't list a RenewalInfo endpoint,
 	// throw an error. This endpoint being present indicates support for ARI.
 	if oldCert != nil && c.dir.RenewalInfo == "" {
@@ -43,6 +43,7 @@ func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, ide
 	newOrderReq := struct {
 		Identifiers []Identifier `json:"identifiers"`
 		Replaces    string       `json:"replaces,omitempty"`
+		Profile     string       `json:"profile,omitempty"`
 	}{
 		Identifiers: identifiers,
 	}
@@ -59,7 +60,13 @@ func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, ide
 		newOrderReq.Replaces = replacesCertID
 		newOrderResp.Replaces = replacesCertID // server does not appear to set this currently?
 	}
-
+	if profile != "" {
+		_, ok := c.Directory().Meta.Profiles[profile]
+		if !ok {
+			return newOrderResp, fmt.Errorf("requested profile %q not advertised by directory", profile)
+		}
+		newOrderReq.Profile = profile
+	}
 	// Submit the order
 	resp, err := c.post(c.dir.NewOrder, account.URL, account.PrivateKey, newOrderReq, &newOrderResp, http.StatusCreated)
 	if err != nil {
