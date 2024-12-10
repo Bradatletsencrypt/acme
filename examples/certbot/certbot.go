@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 // An example of the acme library to create a simple certbot-like clone. Takes a few command line parameters and issues
@@ -22,7 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eggsampler/acme/v3"
+	"github.com/bradatletsencrypt/acme"
 )
 
 var (
@@ -33,6 +30,7 @@ var (
 	accountFile  string
 	certFile     string
 	keyFile      string
+	profile      string
 )
 
 type acmeAccountFile struct {
@@ -55,6 +53,7 @@ func main() {
 		"the file that the pem encoded certificate chain will be saved to")
 	flag.StringVar(&keyFile, "keyfile", "privkey.pem",
 		"the file that the pem encoded certificate private key will be saved to")
+	flag.StringVar(&profile, "profile", "modern", "modern or classic")
 	flag.Parse()
 
 	// check domains are provided
@@ -105,7 +104,7 @@ func main() {
 
 	// create a new order with the acme service given the provided identifiers
 	log.Printf("Creating new order for domains: %s", domainList)
-	order, err := client.NewOrder(account, ids)
+	order, err := client.NewOrder(account, ids, profile)
 	if err != nil {
 		log.Fatalf("Error creating new order: %v", err)
 	}
