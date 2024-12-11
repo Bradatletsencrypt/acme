@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -69,6 +70,7 @@ func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, ide
 	}
 	// Submit the order
 	resp, err := c.post(c.dir.NewOrder, account.URL, account.PrivateKey, newOrderReq, &newOrderResp, http.StatusCreated)
+	log.Printf("SOME DEBUG PRINTING OF newOrderReq: +%x", newOrderReq)
 	if err != nil {
 		return newOrderResp, err
 	}
