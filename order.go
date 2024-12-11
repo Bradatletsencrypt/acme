@@ -62,10 +62,10 @@ func (c Client) ReplacementOrder(account Account, oldCert *x509.Certificate, ide
 		newOrderResp.Replaces = replacesCertID // server does not appear to set this currently?
 	}
 	if profile != "" {
-		_, ok := c.Directory().Meta.Profiles[profile]
+		/* _, ok := c.Directory().Meta.Profiles[profile]
 		if !ok {
 			return newOrderResp, fmt.Errorf("requested profile %q not advertised by directory", profile)
-		}
+		} */
 		newOrderReq.Profile = profile
 	}
 	// Submit the order
